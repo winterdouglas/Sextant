@@ -43,6 +43,8 @@ namespace Sextant
                     {
                         var removedPage = PopStackAndTick(PageSubject);
                         Logger.Debug(CultureInfo.InvariantCulture, "Removed page '{0}' from stack.", removedPage.Id);
+
+                        HandleViewModelDestruction(removedPage);
                     }
                 })
                 .SubscribeSafe();
@@ -143,11 +145,8 @@ namespace Sextant
         }
 
         /// <inheritdoc />
-        public IObservable<Unit> PushPage(
-            INavigable viewModel,
-            string? contract = null,
-            bool resetStack = false,
-            bool animate = true) => PushPage((IViewModel)viewModel, contract, resetStack, animate);
+        public IObservable<Unit> PushPage(INavigable viewModel, string? contract = null, bool resetStack = false, bool animate = true)
+            => PushPage((IViewModel)viewModel, contract, resetStack, animate);
 
         /// <summary>
         /// Returns the top modal from the current modal stack.
@@ -253,6 +252,24 @@ namespace Sextant
                });
 
             stackSubject.OnNext(poppedStack);
+        }
+
+        /// <summary>
+        /// Handles the view model destruction if that's interested in knowing it.
+        /// </summary>
+        /// <param name="viewModel">The view model.</param>
+        protected void HandleViewModelDestruction(IViewModel viewModel)
+        {
+            if (viewModel == null)
+            {
+                throw new ArgumentNullException(nameof(viewModel));
+            }
+
+            if (viewModel is IDestructible destructible)
+            {
+                Logger.Debug(CultureInfo.InvariantCulture, "Calling destroy on the view model '{0}'.", viewModel.Id);
+                destructible.Destroy();
+            }
         }
 
         /// <summary>

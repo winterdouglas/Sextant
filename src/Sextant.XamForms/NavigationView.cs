@@ -51,8 +51,10 @@ namespace Sextant.XamForms
             PagePopped =
                 Observable
                     .FromEventPattern<NavigationEventArgs>(x => Popped += x, x => Popped -= x)
-                    .Select(ep => ep.EventArgs.Page.BindingContext as IViewModel)
-                    .WhereNotNull();
+                    .Select(ep => ep.EventArgs.Page)
+                    .Where(page => page.BindingContext is IViewModel)
+                    .Do(HandlePageDestruction)
+                    .Select(page => (IViewModel)page.BindingContext);
         }
 
         /// <summary>
@@ -71,8 +73,10 @@ namespace Sextant.XamForms
             PagePopped =
                 Observable
                     .FromEventPattern<NavigationEventArgs>(x => Popped += x, x => Popped -= x)
-                    .Select(ep => ep.EventArgs.Page.BindingContext as IViewModel)
-                    .WhereNotNull();
+                    .Select(ep => ep.EventArgs.Page)
+                    .Where(page => page.BindingContext is IViewModel)
+                    .Do(HandlePageDestruction)
+                    .Select(page => (IViewModel)page.BindingContext);
         }
 
         /// <inheritdoc />
@@ -205,6 +209,14 @@ namespace Sextant.XamForms
             view.ViewModel = viewModel;
 
             return page;
+        }
+
+        private void HandlePageDestruction(Page page)
+        {
+            if (page is IDestructible destructible)
+            {
+                destructible.Destroy();
+            }
         }
 
         private void SetPageTitle(Page page, string resourceKey)

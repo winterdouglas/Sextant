@@ -47,22 +47,29 @@ namespace Sextant
                 throw new ArgumentNullException(nameof(parameter));
             }
 
-            return View
-                .PushPage(navigableViewModel, contract, resetStack, animate)
+            return Observable
+                .Return(Unit.Default)
                 .Do(_ =>
                 {
                     navigableViewModel
                         .WhenNavigatingTo(parameter)
                         .ObserveOn(View.MainThreadScheduler)
-                        .Subscribe(navigating => Logger.Debug($"Called `WhenNavigatingTo` on '{navigableViewModel.Id}' passing parameter {parameter}"));
+                        .Subscribe(__ => Logger.Debug($"Called `WhenNavigatingTo` on '{navigableViewModel.Id}' passing parameter {parameter}"));
+                })
+                .SelectMany(_ =>
+                {
+                    return View
+                        .PushPage(navigableViewModel, contract, resetStack, animate)
+                        .Do(_ =>
+                        {
+                            AddToStackAndTick(PageSubject, navigableViewModel, resetStack);
+                            Logger.Debug($"Added page '{navigableViewModel.Id}' (contract '{contract}') to stack.");
 
-                    AddToStackAndTick(PageSubject, navigableViewModel, resetStack);
-                    Logger.Debug($"Added page '{navigableViewModel.Id}' (contract '{contract}') to stack.");
-
-                    navigableViewModel
-                        .WhenNavigatedTo(parameter)
-                        .ObserveOn(View.MainThreadScheduler)
-                        .Subscribe(navigated => Logger.Debug($"Called `WhenNavigatedTo` on '{navigableViewModel.Id}' passing parameter {parameter}"));
+                            navigableViewModel
+                                .WhenNavigatedTo(parameter)
+                                .ObserveOn(View.MainThreadScheduler)
+                                .Subscribe(__ => Logger.Debug($"Called `WhenNavigatedTo` on '{navigableViewModel.Id}' passing parameter {parameter}"));
+                        });
                 });
         }
 
@@ -79,22 +86,29 @@ namespace Sextant
                 throw new ArgumentNullException(nameof(parameter));
             }
 
-            return View
-                .PushModal(navigableModal, contract, withNavigationPage)
+            return Observable
+                .Return(Unit.Default)
                 .Do(_ =>
                 {
                     navigableModal
                         .WhenNavigatingTo(parameter)
                         .ObserveOn(View.MainThreadScheduler)
                         .Subscribe(navigating => Logger.Debug($"Called `WhenNavigatingTo` on '{navigableModal.Id}' passing parameter {parameter}"));
+                })
+                .SelectMany(_ =>
+                {
+                    return View
+                        .PushModal(navigableModal, contract, withNavigationPage)
+                        .Do(_ =>
+                        {
+                            AddToStackAndTick(ModalSubject, navigableModal, false);
+                            Logger.Debug("Added modal '{modal.Id}' (contract '{contract}') to stack.");
 
-                    AddToStackAndTick(ModalSubject, navigableModal, false);
-                    Logger.Debug("Added modal '{modal.Id}' (contract '{contract}') to stack.");
-
-                    navigableModal
-                        .WhenNavigatedTo(parameter)
-                        .ObserveOn(View.MainThreadScheduler)
-                        .Subscribe(navigated => Logger.Debug($"Called `WhenNavigatedTo` on '{navigableModal.Id}' passing parameter {parameter}"));
+                            navigableModal
+                                .WhenNavigatedTo(parameter)
+                                .ObserveOn(View.MainThreadScheduler)
+                                .Subscribe(navigated => Logger.Debug($"Called `WhenNavigatedTo` on '{navigableModal.Id}' passing parameter {parameter}"));
+                        });
                 });
         }
 
@@ -132,7 +146,7 @@ namespace Sextant
                         navigable
                             .WhenNavigatedFrom(parameter)
                             .ObserveOn(View.MainThreadScheduler)
-                            .Subscribe(navigatedFrom =>
+                            .Subscribe(__ =>
                                 Logger.Debug($"Called `WhenNavigatedFrom` on '{navigable.Id}' passing parameter {parameter}"));
                     }
 
@@ -142,7 +156,7 @@ namespace Sextant
                         navigated
                             .WhenNavigatedTo(parameter)
                             .ObserveOn(View.MainThreadScheduler)
-                            .Subscribe(navigatedTo =>
+                            .Subscribe(__ =>
                                 Logger.Debug($"Called `WhenNavigatedTo` passing parameter {parameter}"));
                     }
                 });
